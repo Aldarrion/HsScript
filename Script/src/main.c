@@ -55,6 +55,7 @@ typedef struct
     union
     {
         char*   string;
+        char*   name;
         int     intNum;
         float   floatNum;
     };
@@ -95,6 +96,19 @@ const char* GetTokenString(ETokenType token)
 }
 
 //------------------------------------------------------------------------------
+static void PrintToken(SToken token)
+{
+    switch (token.type)
+    {
+        case TOKEN_STRING:      printf("\"%s\" (%s)\n", token.string, GetTokenString(token.type)); return;
+        case TOKEN_IDENTIFIER:  printf("%s (%s)\n", token.name, GetTokenString(token.type)); return;
+        case TOKEN_INTEGER:     printf("%d (%s)\n", token.intNum, GetTokenString(token.type)); return;
+        case TOKEN_FLOAT:       printf("%f (%s)\n", token.floatNum, GetTokenString(token.type)); return;
+        default:                printf("%s\n", GetTokenString(token.type)); return;
+    }
+}
+
+//------------------------------------------------------------------------------
 static Bool8 IsWhitespace(char c)
 {
     return c == ' '
@@ -128,10 +142,10 @@ static Bool8 IsIdentifierStart(char c)
 //------------------------------------------------------------------------------
 static void AddToken(SToken token, SToken** tokens, int* tokenCount, int* tokenCapacity)
 {
-    if (tokenCount == tokenCapacity)
+    if (*tokenCount == *tokenCapacity)
     {
         *tokenCapacity *= 2;
-        *tokens = realloc(*tokens, *tokenCapacity);
+        *tokens = realloc(*tokens, *tokenCapacity * sizeof(SToken));
     }
 
     (*tokens)[*tokenCount] = token;
@@ -148,6 +162,7 @@ static void AddSimpleToken(ETokenType type, SToken** tokens, int* tokenCount, in
 //------------------------------------------------------------------------------
 static EResult Tokenize(char* code, int size, SToken** outTokens, int* outTokenCount)
 {
+    printf("Tokenizing\n");
     *outTokens = NULL;
     *outTokenCount = 0;
 
@@ -243,7 +258,7 @@ static EResult Tokenize(char* code, int size, SToken** outTokens, int* outTokenC
         {
             char* start = c + 1;
             ++c;
-            while (*c && *c != '"') // TODO(pavel): Detect EOL and report error
+            while (*c && *c != '"')
                 ++c;
 
             if (!*c)
@@ -284,12 +299,36 @@ static EResult Tokenize(char* code, int size, SToken** outTokens, int* outTokenC
         }
         else // Identifier
         {
-            // TODO(pavel): Parse identifiers
+            char* start = c;
             while (IsIdentifier(*c))
                 ++c;
 
-            SToken token = { .type = TOKEN_IDENTIFIER };
-            AddToken(token, &tokens, &tokenCount, &tokenCapacity);
+            int size = c - start;
+            if (strncmp(start, "if", size) == 0)
+            {
+                AddSimpleToken(TOKEN_IF, &tokens, &tokenCount, &tokenCapacity);
+            }
+            else if (strncmp(start, "else", size) == 0)
+            {
+                AddSimpleToken(TOKEN_ELSE, &tokens, &tokenCount, &tokenCapacity);
+            }
+            else if (strncmp(start, "while", size) == 0)
+            {
+                AddSimpleToken(TOKEN_WHILE, &tokens, &tokenCount, &tokenCapacity);
+            }
+            else if (strncmp(start, "for", size) == 0)
+            {
+                AddSimpleToken(TOKEN_FOR, &tokens, &tokenCount, &tokenCapacity);
+            }
+            else
+            {
+                SToken token = { .type = TOKEN_IDENTIFIER };
+                token.name = malloc(size + 1);
+                memcpy(token.name, start, size);
+                token.name[size] = 0;
+
+                AddToken(token, &tokens, &tokenCount, &tokenCapacity);
+            }
             continue;
         }
 
@@ -301,9 +340,11 @@ static EResult Tokenize(char* code, int size, SToken** outTokens, int* outTokenC
     *outTokens = tokens;
     *outTokenCount = tokenCount;
 
+    printf("Tokenizing done\n");
     return R_OK;
 
 error:
+    printf("ERROR tokenizing\n");
     free(tokens);
     return R_ERROR;
 }
@@ -327,6 +368,7 @@ static EResult Compile()
 //------------------------------------------------------------------------------
 static EResult CompileCode(char* code, int size)
 {
+    printf("Compiling code\n");
     EResult r;
 
     SToken* tokens;
@@ -336,10 +378,13 @@ static EResult CompileCode(char* code, int size)
     if (r != R_OK)
         return r;
 
+    // TODO(pavel): Free tokens and all their data
+
+    printf("-- Printing\n");
     SToken* t = tokens;
     while (t->type != TOKEN_END)
     {
-        printf("%s\n", GetTokenString(t->type));
+        PrintToken(*t);
         ++t;
     }
 
@@ -403,7 +448,10 @@ static void Test()
     char* file;
     int size;
     if (!ReadFile(&file, &size))
+    {
+        printf("Failed to read the file\n");
         return;
+    }
 
     CompileCode(file, size);
 }
