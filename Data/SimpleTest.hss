@@ -2,11 +2,14 @@ int x = 0; // A comment
 
 x = 2 + 3;
 
+float f = 3.1415926535897;
+
 if (x > 0)
 {
     print(x);
 }
 else
 {
-    print("x too low");
+    print("x too low, printing f");
+    print(f);
 }

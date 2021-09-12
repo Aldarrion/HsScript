@@ -133,6 +133,12 @@ static Bool8 IsIdentifier(char c)
 }
 
 //------------------------------------------------------------------------------
+static Bool8 IsNumber(char c)
+{
+    return (c > '0' & c < '9');
+}
+
+//------------------------------------------------------------------------------
 static Bool8 IsIdentifierStart(char c)
 {
     return IsIdentifier(c)
@@ -157,6 +163,25 @@ static void AddSimpleToken(ETokenType type, SToken** tokens, int* tokenCount, in
 {
     SToken token = { .type = type };
     AddToken(token, tokens, tokenCount, tokenCapacity);
+}
+
+//------------------------------------------------------------------------------
+static void FreeTokens(SToken** tokens, int* tokenCount)
+{
+    for (int i = 0; i < *tokenCount; ++i)
+    {
+        SToken* token = (*tokens) + i;
+        switch (token->type)
+        {
+            case TOKEN_STRING: free(token->string); break;
+            case TOKEN_IDENTIFIER: free(token->name); break;
+            default: break;
+        }
+    }
+
+    free(*tokens);
+    *tokens = NULL;
+    *tokenCount = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -280,16 +305,40 @@ static EResult Tokenize(char* code, int size, SToken** outTokens, int* outTokenC
         }
         else if (*c >= '0' && *c <= '9') // Number
         {
-            // TODO(pavel): Parse floats
+            char* start = c;
+            Bool8 hasDot = HS_FALSE;
 
-            int number = 0;
             do {
-                number *= 10;
-                number += *c - '0';
-                ++c;
-            } while (*c >= '0' && *c <= '9');
+                if (*c == '.')
+                {
+                    if (hasDot)
+                    {
+                        printf("ERROR: Not a valid number format\n");
+                        goto error;
+                    }
+                    hasDot = HS_TRUE;
+                }
 
-            SToken token = { .type = TOKEN_INTEGER, .intNum = number };
+                ++c;
+            } while (*c && ((*c >= '0' & *c <= '9') | (*c == '.')));
+
+            char previous = *c;
+            *c = 0;
+
+            SToken token;
+            if (hasDot)
+            {
+                token.type = TOKEN_FLOAT;
+                sscanf(start, "%f", &token.floatNum);
+            }
+            else
+            {
+                token.type = TOKEN_INTEGER;
+                sscanf(start, "%d", &token.intNum);
+            }
+
+            *c = previous;
+
             AddToken(token, &tokens, &tokenCount, &tokenCapacity);
             continue;
         }
@@ -345,7 +394,7 @@ static EResult Tokenize(char* code, int size, SToken** outTokens, int* outTokenC
 
 error:
     printf("ERROR tokenizing\n");
-    free(tokens);
+    FreeTokens(&tokens, &tokenCount);
     return R_ERROR;
 }
 
@@ -376,9 +425,8 @@ static EResult CompileCode(char* code, int size)
 
     r = Tokenize(code, size, &tokens, &tokenCount);
     if (r != R_OK)
-        return r;
+        goto end;
 
-    // TODO(pavel): Free tokens and all their data
 
     printf("-- Printing\n");
     SToken* t = tokens;
@@ -390,12 +438,14 @@ static EResult CompileCode(char* code, int size)
 
     r = Parse();
     if (r != R_OK)
-        return r;
+        goto end;
 
     r = Compile();
     if (r != R_OK)
-        return r;
+        goto end;
 
+end:
+    FreeTokens(&tokens, &tokenCount);
     return r;
 }
 
