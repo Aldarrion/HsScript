@@ -4,8 +4,12 @@
 #include <string.h>
 
 typedef int8_t Bool8;
-#define HS_FALSE 0
-#define HS_TRUE 1
+
+enum
+{
+	HS_FALSE,
+	HS_TRUE
+};
 
 //------------------------------------------------------------------------------
 typedef enum

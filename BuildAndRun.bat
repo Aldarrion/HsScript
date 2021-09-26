@@ -9,3 +9,5 @@ if %err% NEQ 0 (
 
 pushd Data
 ..\build\cmd\ScriptMain.exe
+
+popd
