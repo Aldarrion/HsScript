@@ -1,15 +1,17 @@
-int x = 0; // A comment
+2 + y * asd / 123 + x * 2
 
-x = 2 + 3;
+//int x = 0; // A comment
 
-float f = 3.1415926535897;
+//x = 2 + 3;
 
-if (x > 0)
-{
-    print(x);
-}
-else
-{
-    print("x too low, printing f");
-    print(f);
-}
+//float f = 3.1415926535897;
+//
+//if (x > 0)
+//{
+//    print(x);
+//}
+//else
+//{
+//    print("x too low, printing f");
+//    print(f);
+//}
