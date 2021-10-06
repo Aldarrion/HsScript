@@ -178,7 +178,7 @@ static SASTNode* Statement(SParserState* s)
 {
     SASTNode* stmt = AllocNode();
     stmt->type = ANT_EXPR_STMT;
-    stmt->expr.expr = Term(s);
+    stmt->stmt.expr = Term(s);
 
     Expect(s->t++, TOKEN_SEMICOLON);
     return stmt;
@@ -198,15 +198,15 @@ EResult Parse(SToken* tokens, int tokenCount, SASTNode** root)
     **root = (SASTNode)
     {
         .type = ANT_PROGRAM,
-        .block = { .child = NULL }
+        .stmt = { .child = NULL }
     };
 
-    SASTNode** next = &(*root)->block.child;
+    SASTNode** next = &(*root)->stmt.child;
 
     while (state.t->type != TOKEN_END)
     {
         *next = Statement(&state);
-        next = &(*next)->expr.sibling;
+        next = &(*next)->stmt.sibling;
     }
 
 

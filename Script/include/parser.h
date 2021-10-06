@@ -20,18 +20,18 @@ typedef struct ASTNode
     EASTNodeType type;
     union
     {
+        // Statement
         struct
         {
             struct ASTNode* sibling;
-            struct ASTNode* child;
-        } block;
+            union
+            {
+                struct ASTNode* child;  // Block statement
+                struct ASTNode* expr;   // Expression statement
+            };
+        } stmt;
 
-        struct
-        {
-            struct ASTNode* sibling;
-            struct ASTNode* expr;
-        } expr; // Expression statement
-
+        // Expressions
         struct
         {
             struct ASTNode* left;

@@ -71,18 +71,18 @@ static void PrintNode(SASTNode* node)
         case ANT_PROGRAM:
         case ANT_BLOCK:
         {
-            SASTNode* child = node->block.child;
+            SASTNode* child = node->stmt.child;
             while (child)
             {
                 PrintNode(child);
-                child = child->expr.sibling;
+                child = child->stmt.sibling;
             }
             break;
         }
 
         case ANT_EXPR_STMT:
         {
-            PrintNode(node->expr.expr);
+            PrintNode(node->stmt.expr);
             break;
         }
 
