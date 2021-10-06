@@ -31,7 +31,7 @@ static Bool8 IsIdentifier(char c)
 //------------------------------------------------------------------------------
 static Bool8 IsNumber(char c)
 {
-    return (c > '0' & c < '9');
+    return (c >= '0' & c <= '9');
 }
 
 //------------------------------------------------------------------------------
@@ -199,7 +199,7 @@ EResult Tokenize(char* code, int size, SToken** outTokens, int* outTokenCount)
 
             AddToken(token, &tokens, &tokenCount, &tokenCapacity);
         }
-        else if (*c >= '0' && *c <= '9') // Number
+        else if (IsNumber(*c))
         {
             char* start = c;
             Bool8 hasDot = HS_FALSE;

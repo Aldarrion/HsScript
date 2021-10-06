@@ -64,7 +64,7 @@ static EResult Compile()
 }
 
 //------------------------------------------------------------------------------
-static void PrintAST(SASTNode* node)
+static void PrintNode(SASTNode* node)
 {
     switch (node->type)
     {
@@ -104,7 +104,7 @@ static void PrintAST(SASTNode* node)
                 }
                 default: assert(0); break;
             }
-            PrintAST(node->unary.right);
+            PrintNode(node->unary.right);
             break;
         }
         case ANT_BINARY_OP:
@@ -135,13 +135,20 @@ static void PrintAST(SASTNode* node)
                 }
                 default: assert(0); break;
             }
-            PrintAST(node->binary.left);
-            PrintAST(node->binary.right);
+            PrintNode(node->binary.left);
+            PrintNode(node->binary.right);
             printf(") ");
             break;
         }
         default: assert(0); break;
     }
+}
+
+//------------------------------------------------------------------------------
+void PrintAST(SASTNode* root)
+{
+    PrintNode(root);
+    printf("\n");
 }
 
 //------------------------------------------------------------------------------
