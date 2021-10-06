@@ -5,6 +5,10 @@
 //------------------------------------------------------------------------------
 typedef enum
 {
+    ANT_PROGRAM,
+    ANT_BLOCK,
+    ANT_EXPR_STMT,
+
     ANT_LITERAL,
     ANT_UNARY_OP,
     ANT_BINARY_OP,
@@ -16,6 +20,18 @@ typedef struct ASTNode
     EASTNodeType type;
     union
     {
+        struct
+        {
+            struct ASTNode* sibling;
+            struct ASTNode* child;
+        } block;
+
+        struct
+        {
+            struct ASTNode* sibling;
+            struct ASTNode* expr;
+        } expr; // Expression statement
+
         struct
         {
             struct ASTNode* left;

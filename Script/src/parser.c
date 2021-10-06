@@ -19,12 +19,22 @@ static SASTNode* AllocNode()
     return g_NodesNext++;
 }
 
-//term           → factor ( ( "-" | "+" ) factor )* ;
-//factor         → unary ( ( "/" | "*" ) unary )* ;
-//unary          → ( "!" | "-" ) unary
-//               | primary ;
-//primary        → NUMBER | STRING | "true" | "false" | "nil"
-//               | "(" expression ")" ;
+#if 0
+program        → statement* EOF ;
+
+statement      → exprStmt
+               | printStmt ;
+
+exprStmt       → expression ";" ;
+printStmt      → "print" expression ";" ;
+
+term           → factor ( ( "-" | "+" ) factor )* ;
+factor         → unary ( ( "/" | "*" ) unary )* ;
+unary          → ( "!" | "-" ) unary
+               | primary ;
+primary        → NUMBER | STRING | "true" | "false" | "nil"
+               | "(" expression ")" ;
+#endif
 
 //------------------------------------------------------------------------------
 // Assignment : type? var = Expression;
@@ -46,6 +56,12 @@ static Bool8 Match(const SToken* t, int count, ...)
 
     va_end(args);
     return HS_FALSE;
+}
+
+static void Expect(SToken* t, ETokenType type)
+{
+    // TODO(pavel): error handling
+    assert(t->type == type);
 }
 
 //------------------------------------------------------------------------------
@@ -157,6 +173,16 @@ static SASTNode* Term(SParserState* s)
     return expr;
 }
 
+//------------------------------------------------------------------------------
+static SASTNode* Statement(SParserState* s)
+{
+    SASTNode* stmt = AllocNode();
+    stmt->type = ANT_EXPR_STMT;
+    stmt->expr.expr = Term(s);
+
+    Expect(s->t++, TOKEN_SEMICOLON);
+    return stmt;
+}
 
 //------------------------------------------------------------------------------
 // Input = tokens
@@ -168,7 +194,21 @@ EResult Parse(SToken* tokens, int tokenCount, SASTNode** root)
         .t = tokens,
     };
 
-    *root = Term(&state);
+    *root = AllocNode();
+    **root = (SASTNode)
+    {
+        .type = ANT_PROGRAM,
+        .block = { .child = NULL }
+    };
+
+    SASTNode** next = &(*root)->block.child;
+
+    while (state.t->type != TOKEN_END)
+    {
+        *next = Statement(&state);
+        next = &(*next)->expr.sibling;
+    }
+
 
     return R_OK;
 }

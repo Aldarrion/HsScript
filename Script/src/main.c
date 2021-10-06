@@ -68,6 +68,24 @@ static void PrintNode(SASTNode* node)
 {
     switch (node->type)
     {
+        case ANT_PROGRAM:
+        case ANT_BLOCK:
+        {
+            SASTNode* child = node->block.child;
+            while (child)
+            {
+                PrintNode(child);
+                child = child->expr.sibling;
+            }
+            break;
+        }
+
+        case ANT_EXPR_STMT:
+        {
+            PrintNode(node->expr.expr);
+            break;
+        }
+
         case ANT_LITERAL:
         {
             SToken* token = node->literal.token;
@@ -148,7 +166,8 @@ static void PrintNode(SASTNode* node)
 void PrintAST(SASTNode* root)
 {
     PrintNode(root);
-    printf("\n");
+    printf("<-- result\n");
+    printf("(+ (+ 2 (/ (* y asd ) 123 ) ) (* x 2 ) ) <-- expected\n");
 }
 
 //------------------------------------------------------------------------------
