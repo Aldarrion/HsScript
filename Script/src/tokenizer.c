@@ -16,6 +16,11 @@ static Bool8 IsWhitespace(char c)
 //------------------------------------------------------------------------------
 static Bool8 IsIdentifier(char c)
 {
+    return (c >= 'a' & c <= 'z')
+        | (c >= 'A' & c <= 'Z')
+        | c == '_';
+
+    #if 0
     return (c != 0)
         & !IsWhitespace(c)
         & c != '='
@@ -25,7 +30,9 @@ static Bool8 IsIdentifier(char c)
         & c != '('
         & c != ')'
         & c != '{'
-        & c != '}';
+        & c != '}'
+        & c != ':';
+    #endif
 }
 
 //------------------------------------------------------------------------------
@@ -114,6 +121,10 @@ EResult Tokenize(char* code, int size, SToken** outTokens, int* outTokenCount)
         else if (*c == ';')
         {
             AddSimpleToken(TOKEN_SEMICOLON, &tokens, &tokenCount, &tokenCapacity);
+        }
+        else if (*c == ':')
+        {
+            AddSimpleToken(TOKEN_COLON, &tokens, &tokenCount, &tokenCapacity);
         }
         else if (*c == '=' && *(c + 1) == '=')
         {
@@ -264,6 +275,10 @@ EResult Tokenize(char* code, int size, SToken** outTokens, int* outTokenCount)
             else if (strncmp(start, "for", size) == 0)
             {
                 AddSimpleToken(TOKEN_FOR, &tokens, &tokenCount, &tokenCapacity);
+            }
+            else if (strncmp(start, "var", size) == 0)
+            {
+                AddSimpleToken(TOKEN_VAR, &tokens, &tokenCount, &tokenCapacity);
             }
             else
             {

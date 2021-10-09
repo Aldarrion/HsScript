@@ -64,19 +64,57 @@ static EResult Compile()
 }
 
 //------------------------------------------------------------------------------
+static void PrintNode(SASTNode* node);
+
+//------------------------------------------------------------------------------
 static void PrintNode(SASTNode* node)
 {
     switch (node->type)
     {
         case ANT_PROGRAM:
+        {
+            SASTNode* child = node->programChild;
+            while (child)
+            {
+                PrintNode(child);
+                child = child->decl.sibling;
+                if (!child)
+                    break;
+                printf("\n");
+            }
+            break;
+        }
         case ANT_BLOCK:
         {
             SASTNode* child = node->stmt.child;
             while (child)
             {
                 PrintNode(child);
-                child = child->stmt.sibling;
+                child = child->decl.sibling;
+                if (!child)
+                    break;
+                printf("\n");
             }
+            break;
+        }
+
+        case ANT_DECL_VAR:
+        {
+            node = node->decl.declVar;
+            printf("var %s: %s", node->declVar.name->name, node->declVar.type->name);
+            if (node->declVar.initExpr)
+            {
+                printf(" = ");
+                PrintNode(node->declVar.initExpr);
+            }
+            printf(";");
+            break;
+        }
+
+        case ANT_DECL_STMT:
+        {
+            PrintNode(node->decl.stmt);
+            printf(";");
             break;
         }
 
@@ -93,17 +131,17 @@ static void PrintNode(SASTNode* node)
             {
                 case TOKEN_INTEGER:
                 {
-                    printf("%d ", token->intNum);
+                    printf("%d", token->intNum);
                     break;
                 }
                 case TOKEN_FLOAT:
                 {
-                    printf("%f ", token->floatNum);
+                    printf("%f", token->floatNum);
                     break;
                 }
                 case TOKEN_IDENTIFIER:
                 {
-                    printf("%s ", token->name);
+                    printf("%s", token->name);
                     break;
                 }
                 default: assert(0); break;
@@ -153,9 +191,9 @@ static void PrintNode(SASTNode* node)
                 }
                 default: assert(0); break;
             }
-            PrintNode(node->binary.left);
+            PrintNode(node->binary.left); printf(" ");
             PrintNode(node->binary.right);
-            printf(") ");
+            printf(")");
             break;
         }
         default: assert(0); break;
@@ -166,8 +204,8 @@ static void PrintNode(SASTNode* node)
 void PrintAST(SASTNode* root)
 {
     PrintNode(root);
-    printf("<-- result\n");
-    printf("(+ (+ 2 (/ (* y asd ) 123 ) ) (* x 2 ) ) <-- expected\n");
+    printf(" <-- result\n");
+    printf("var z: int = (+ (+ 2 (/ (* y asd) 123)) (* x 2)); <-- expected\n");
 }
 
 //------------------------------------------------------------------------------

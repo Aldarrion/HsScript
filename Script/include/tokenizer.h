@@ -6,6 +6,7 @@
 typedef enum
 {
     TOKEN_SEMICOLON,
+    TOKEN_COLON,
     TOKEN_EQUALS,
     TOKEN_LEFT_BRACE,
     TOKEN_RIGHT_BRACE,
@@ -23,6 +24,7 @@ typedef enum
     TOKEN_EQUAL_EQUAL,
     TOKEN_NOT_EQUAL,
 
+    TOKEN_VAR,
     TOKEN_IF,
     TOKEN_ELSE,
     TOKEN_WHILE,

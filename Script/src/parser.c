@@ -19,22 +19,70 @@ static SASTNode* AllocNode()
     return g_NodesNext++;
 }
 
-#if 0
-program        → statement* EOF ;
+/*
+Grammar from https://craftinginterpreters.com/appendix-i.html
+
+program        → declaration* EOF ;
+
+
+
+declaration    → classDecl
+               | funDecl
+               | varDecl
+               | statement ;
+
+classDecl      → "class" IDENTIFIER ( "<" IDENTIFIER )?
+                 "{" function* "}" ;
+funDecl        → "fun" function ;
+varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+
+
 
 statement      → exprStmt
-               | printStmt ;
+               | forStmt
+               | ifStmt
+               | printStmt
+               | returnStmt
+               | whileStmt
+               | block ;
 
 exprStmt       → expression ";" ;
+forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+                           expression? ";"
+                           expression? ")" statement ;
+ifStmt         → "if" "(" expression ")" statement
+                 ( "else" statement )? ;
 printStmt      → "print" expression ";" ;
+returnStmt     → "return" expression? ";" ;
+whileStmt      → "while" "(" expression ")" statement ;
+block          → "{" declaration* "}" ;
 
+
+
+expression     → assignment ;
+
+assignment     → ( call "." )? IDENTIFIER "=" assignment
+               | logic_or ;
+
+logic_or       → logic_and ( "or" logic_and )* ;
+logic_and      → equality ( "and" equality )* ;
+equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ( "/" | "*" ) unary )* ;
-unary          → ( "!" | "-" ) unary
-               | primary ;
-primary        → NUMBER | STRING | "true" | "false" | "nil"
-               | "(" expression ")" ;
-#endif
+
+unary          → ( "!" | "-" ) unary | call ;
+call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
+primary        → "true" | "false" | "nil" | "this"
+               | NUMBER | STRING | IDENTIFIER | "(" expression ")"
+               | "super" "." IDENTIFIER ;
+
+
+function       → IDENTIFIER "(" parameters? ")" block ;
+parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
+arguments      → expression ( "," expression )* ;
+
+*/
 
 //------------------------------------------------------------------------------
 // Assignment : type? var = Expression;
@@ -58,10 +106,11 @@ static Bool8 Match(const SToken* t, int count, ...)
     return HS_FALSE;
 }
 
-static void Expect(SToken* t, ETokenType type)
+static SToken* Expect(SToken* t, ETokenType type)
 {
     // TODO(pavel): error handling
     assert(t->type == type);
+    return t;
 }
 
 //------------------------------------------------------------------------------
@@ -158,7 +207,6 @@ static SASTNode* Factor(SParserState* s)
 }
 
 //------------------------------------------------------------------------------
-// Term
 static SASTNode* Term(SParserState* s)
 {
     SASTNode* expr = Factor(s);
@@ -174,14 +222,85 @@ static SASTNode* Term(SParserState* s)
 }
 
 //------------------------------------------------------------------------------
+static SASTNode* Expr(SParserState* s)
+{
+    SASTNode* expr = Term(s);
+
+    // TODO(pavel): Expressions
+
+    return expr;
+}
+
+//------------------------------------------------------------------------------
 static SASTNode* Statement(SParserState* s)
 {
     SASTNode* stmt = AllocNode();
+    // TODO(pavel): Match statements
+
+    // Expression statement
     stmt->type = ANT_EXPR_STMT;
-    stmt->stmt.expr = Term(s);
+    stmt->stmt.expr = Expr(s);
+    Expect(s->t++, TOKEN_SEMICOLON);
+
+    return stmt;
+}
+
+//------------------------------------------------------------------------------
+static SASTNode* VariableDeclaration(SParserState* s)
+{
+    SToken* name =  Expect(s->t++, TOKEN_IDENTIFIER);
+                    Expect(s->t++, TOKEN_COLON);
+    SToken* type =  Expect(s->t++, TOKEN_IDENTIFIER);
+
+    SASTNode* initExpr = NULL;
+    if (s->t->type == TOKEN_EQUALS)
+    {
+        ++s->t;
+        initExpr = Expr(s);
+    }
+
+    SASTNode* varDecl = AllocNode();
+    *varDecl = (SASTNode)
+    {
+        .type = ANT_DECL_VAR,
+        .declVar =
+        {
+            .type = type,
+            .name = name,
+            .initExpr = initExpr,
+        }
+    };
 
     Expect(s->t++, TOKEN_SEMICOLON);
-    return stmt;
+
+    return varDecl;
+}
+
+//------------------------------------------------------------------------------
+static SASTNode* Declaration(SParserState* s)
+{
+    SASTNode* decl = AllocNode();
+    decl->decl.sibling = NULL;
+
+    switch (s->t->type)
+    {
+        case TOKEN_VAR:
+        {
+            ++s->t;
+            decl->type = ANT_DECL_VAR;
+            decl->decl.declVar = VariableDeclaration(s);
+            break;
+        }
+        // TODO other declarations
+        default: // Statement
+        {
+            decl->type = ANT_DECL_STMT;
+            decl->decl.stmt = Statement(s);
+            break;
+        }
+    }
+
+    return decl;
 }
 
 //------------------------------------------------------------------------------
@@ -201,12 +320,12 @@ EResult Parse(SToken* tokens, int tokenCount, SASTNode** root)
         .stmt = { .child = NULL }
     };
 
-    SASTNode** next = &(*root)->stmt.child;
+    SASTNode** next = &(*root)->programChild;
 
     while (state.t->type != TOKEN_END)
     {
-        *next = Statement(&state);
-        next = &(*next)->stmt.sibling;
+        *next = Declaration(&state);
+        next = &(*next)->decl.sibling;
     }
 
 

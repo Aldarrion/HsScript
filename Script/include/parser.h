@@ -6,8 +6,11 @@
 typedef enum
 {
     ANT_PROGRAM,
-    ANT_BLOCK,
+    ANT_DECL_VAR,
+    ANT_DECL_STMT,
+
     ANT_EXPR_STMT,
+    ANT_BLOCK,
 
     ANT_LITERAL,
     ANT_UNARY_OP,
@@ -15,21 +18,43 @@ typedef enum
 } EASTNodeType;
 
 //------------------------------------------------------------------------------
+typedef struct Statement
+{
+    union
+    {
+        struct ASTNode* child;  // Block statement
+        struct ASTNode* expr;   // Expression statement
+    };
+} SStatement;
+
+//------------------------------------------------------------------------------
 typedef struct ASTNode
 {
     EASTNodeType type;
     union
     {
-        // Statement
+        struct ASTNode* programChild;
+
+        // Declaration
         struct
         {
-            struct ASTNode* sibling;
+            struct ASTNode* sibling; // Also a declaration
             union
             {
-                struct ASTNode* child;  // Block statement
-                struct ASTNode* expr;   // Expression statement
+                struct ASTNode* declVar;
+                struct ASTNode* stmt;
             };
-        } stmt;
+        } decl;
+
+        // Variable declaration
+        struct
+        {
+            struct Token* type;
+            struct Token* name;
+            struct ASTNode* initExpr; // Possibly NULL
+        } declVar;
+
+        struct Statement stmt;
 
         // Expressions
         struct
