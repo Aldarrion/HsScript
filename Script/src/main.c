@@ -86,7 +86,7 @@ static void PrintNode(SASTNode* node)
         }
         case ANT_BLOCK:
         {
-            SASTNode* child = node->stmt.child;
+            SASTNode* child = node->stmt.block;
             while (child)
             {
                 PrintNode(child);
@@ -121,6 +121,13 @@ static void PrintNode(SASTNode* node)
         case ANT_EXPR_STMT:
         {
             PrintNode(node->stmt.expr);
+            break;
+        }
+
+        case ANT_ASSIGN:
+        {
+            printf("%s = ", node->assign.var->name);
+            PrintNode(node->assign.assign);
             break;
         }
 
@@ -205,7 +212,7 @@ void PrintAST(SASTNode* root)
 {
     PrintNode(root);
     printf(" <-- result\n");
-    printf("var z: int = (+ (+ 2 (/ (* y asd) 123)) (* x 2)); <-- expected\n");
+    printf("z = (+ (+ 2 (/ (* y asd) 123)) (* x 2)); <-- expected\n");
 }
 
 //------------------------------------------------------------------------------

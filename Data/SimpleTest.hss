@@ -1,8 +1,9 @@
 var x: int;
-//x = 0;
+var z: int;
+x = z = 0;
 var y: int = 42;
 var asd: int = 33;
-var z: int = 2 + y * asd / 123 + x * 2;
+z = 2 + y * asd / 123 + x * 2;
 
 //int x = 0; // A comment
 

@@ -19,6 +19,13 @@ static SASTNode* AllocNode()
     return g_NodesNext++;
 }
 
+static SASTNode* AllocNodeType(EASTNodeType type)
+{
+    SASTNode* node = AllocNode();
+    node->type = type;
+    return node;
+}
+
 /*
 Grammar from https://craftinginterpreters.com/appendix-i.html
 
@@ -83,9 +90,6 @@ parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
 arguments      → expression ( "," expression )* ;
 
 */
-
-//------------------------------------------------------------------------------
-// Assignment : type? var = Expression;
 
 //------------------------------------------------------------------------------
 static Bool8 Match(const SToken* t, int count, ...)
@@ -222,12 +226,37 @@ static SASTNode* Term(SParserState* s)
 }
 
 //------------------------------------------------------------------------------
+/*
+expression     → assignment ;
+
+assignment     → IDENTIFIER "=" assignment
+               | term ;
+*/
+
+//------------------------------------------------------------------------------
+static SASTNode* Assignment(SParserState* s)
+{
+    if ((s->t + 1)->type == TOKEN_EQUALS)
+    {
+        SASTNode* node = AllocNodeType(ANT_ASSIGN);
+
+        node->assign.var = Expect(s->t++, TOKEN_IDENTIFIER);
+
+        Expect(s->t++, TOKEN_EQUALS);
+
+        node->assign.assign = Assignment(s);
+        return node;
+    }
+    else
+    {
+        return Term(s);
+    }
+}
+
+//------------------------------------------------------------------------------
 static SASTNode* Expr(SParserState* s)
 {
-    SASTNode* expr = Term(s);
-
-    // TODO(pavel): Expressions
-
+    SASTNode* expr = Assignment(s);
     return expr;
 }
 
@@ -317,7 +346,7 @@ EResult Parse(SToken* tokens, int tokenCount, SASTNode** root)
     **root = (SASTNode)
     {
         .type = ANT_PROGRAM,
-        .stmt = { .child = NULL }
+        .programChild = NULL,
     };
 
     SASTNode** next = &(*root)->programChild;

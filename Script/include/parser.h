@@ -9,6 +9,8 @@ typedef enum
     ANT_DECL_VAR,
     ANT_DECL_STMT,
 
+    ANT_ASSIGN,
+
     ANT_EXPR_STMT,
     ANT_BLOCK,
 
@@ -22,7 +24,7 @@ typedef struct Statement
 {
     union
     {
-        struct ASTNode* child;  // Block statement
+        struct ASTNode* block;  // Block statement
         struct ASTNode* expr;   // Expression statement
     };
 } SStatement;
@@ -55,6 +57,12 @@ typedef struct ASTNode
         } declVar;
 
         struct Statement stmt;
+
+        struct Assign
+        {
+            struct Token* var;
+            struct ASTNode* assign;
+        } assign;
 
         // Expressions
         struct
